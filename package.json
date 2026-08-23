@@ -1,0 +1,15 @@
+{
+  "name": "leetsense",
+  "version": "1.0.0",
+  "description": "VS Code-style intelligent autocomplete and CP snippets for LeetCode Monaco editor",
+  "scripts": {
+    "build": "tsc --noEmit && node build.js",
+    "watch": "node build.js --watch"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.260",
+    "@types/node": "^20.11.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.3"
+  }
+}
