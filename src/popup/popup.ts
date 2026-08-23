@@ -1,27 +1,31 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const autoEl = document.getElementById('toggle-autocomplete') as HTMLInputElement | null;
-  const snipEl = document.getElementById('toggle-snippets') as HTMLInputElement | null;
+  const enableAutocomplete = document.getElementById('enableAutocomplete') as HTMLInputElement;
+  const enableSnippets = document.getElementById('enableSnippets') as HTMLInputElement;
+  const enableScopeAwareness = document.getElementById('enableScopeAwareness') as HTMLInputElement;
 
-  if (!autoEl || !snipEl) return;
+  const defaults = {
+    enableAutocomplete: true,
+    enableSnippets: true,
+    enableScopeAwareness: true
+  };
 
-  // Load existing configuration
-  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-    chrome.storage.local.get(['autocompleteEnabled', 'snippetsEnabled'], (result) => {
-      autoEl.checked = result.autocompleteEnabled ?? true;
-      snipEl.checked = result.snippetsEnabled ?? true;
+  // Load saved state
+  chrome.storage.sync.get(defaults, (items) => {
+    enableAutocomplete.checked = items.enableAutocomplete;
+    enableSnippets.checked = items.enableSnippets;
+    enableScopeAwareness.checked = items.enableScopeAwareness;
+  });
+
+  // Attach change listeners
+  const saveOptions = () => {
+    chrome.storage.sync.set({
+      enableAutocomplete: enableAutocomplete.checked,
+      enableSnippets: enableSnippets.checked,
+      enableScopeAwareness: enableScopeAwareness.checked
     });
-  }
+  };
 
-  // Update storage on toggle change
-  autoEl.addEventListener('change', () => {
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.set({ autocompleteEnabled: autoEl.checked });
-    }
-  });
-
-  snipEl.addEventListener('change', () => {
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.set({ snippetsEnabled: snipEl.checked });
-    }
-  });
+  enableAutocomplete.addEventListener('change', saveOptions);
+  enableSnippets.addEventListener('change', saveOptions);
+  enableScopeAwareness.addEventListener('change', saveOptions);
 });

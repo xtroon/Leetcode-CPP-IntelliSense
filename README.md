@@ -1,115 +1,101 @@
-# LeetSense ⚡
+# Leetcode C++ IntelliSense
 
-**LeetSense** is a lightweight, high-performance Chrome Extension (Manifest V3) that injects VS Code-style intelligent autocomplete and Competitive Programming (CP) snippets directly into LeetCode's Monaco code editor.
+A lightweight Chrome Extension (Manifest V3) that provides VS Code-style autocomplete and IntelliSense for C++ inside LeetCode's Monaco code editor.
 
-Everything runs **100% locally in your browser** with zero external API calls or backend dependencies.
+All parsing and completion logic runs entirely locally in your browser with zero latency and no external network dependencies.
+
+![Leetcode C++ IntelliSense Preview](public/preview.png)
 
 ---
 
 ## Features
 
-### 1. 🎯 Scope-Aware Variable Autocomplete
-- Parses function parameters and local variable declarations.
-- Automatically tracks block scopes (`{ ... }`) line-by-line.
-- Excludes variables that are not accessible within your current scope.
+### 1. Scope-Aware Variable Autocomplete
+- Automatically discovers local variables, loop identifiers, and method parameters.
+- Filters out variables outside the current block scope.
 
-### 2. ⚡ Type-Aware C++ STL Method Completion
-- Typing `.` or `->` after a variable automatically infers its type and provides context-relevant methods.
-- Full support for common C++ STL containers and data structures:
-  - **Containers**: `vector`, `string`, `deque`
-  - **Associative**: `map`, `unordered_map`, `set`, `unordered_set`
-  - **Adaptors**: `stack`, `queue`, `priority_queue`
-  - **Utilities & LeetCode Types**: `pair`, `ListNode`, `TreeNode`
+### 2. Type-Aware Container Autocomplete
+Typing `.` or `->` on a variable displays only the methods relevant to that specific C++ container:
+- **vector**: `push_back`, `emplace_back`, `pop_back`, `size`, `empty`, `clear`, `front`, `back`, `begin`, `end`, `insert`, `erase`, `resize`, `reserve`, `assign`
+- **string**: `length`, `size`, `substr`, `find`, `rfind`, `push_back`, `pop_back`, `empty`, `clear`, `front`, `back`, `append`, `compare`, `c_str`
+- **unordered_map / map**: `insert`, `emplace`, `erase`, `find`, `count`, `contains`, `size`, `empty`, `clear`, `at`, `reserve`
+- **set / unordered_set**: `insert`, `emplace`, `erase`, `find`, `count`, `contains`, `size`, `empty`, `clear`, `lower_bound`, `upper_bound`
+- **stack / queue / priority_queue**: `push`, `pop`, `top` / `front`, `back`, `size`, `empty`
+- **deque**: `push_back`, `push_front`, `pop_back`, `pop_front`, `front`, `back`, `size`, `empty`, `clear`
+- **pair**: `first`, `second`
+- **ListNode / TreeNode / Node**: `val`, `next`, `left`, `right`, `neighbors`, `random`
 
-### 3. 🚀 Competitive Programming Snippets
-- `fori` → Indexed loop `for (int i = 0; i < n; ++i)`
-- `forj` → Nested loop `for (int j = 0; j < m; ++j)`
-- `fore` → Range-based loop `for (auto& x : container)`
-- `pb` → `push_back(val)`
-- `sortv` → `sort(nums.begin(), nums.end())`
-- `sortr` → `sort(nums.rbegin(), nums.rend())`
-- `all` → `nums.begin(), nums.end()`
-- `bs` → Binary search `lower_bound` template
-- `bfs` → Queue-based BFS template
-- `dfs` → Recursive DFS lambda template
-- `fastio` → Fast I/O speedup block
-- `pq` / `pqmin` → Max-heap / Min-heap priority queue
-- `uMap` / `uSet` → `unordered_map` / `unordered_set`
+### 3. Typo Tolerance & Spelling Matching
+- Resolves minor spelling typos on variable names (e.g., `vnums.` resolves to `nums.` and displays vector operations).
+- Filters methods dynamically as you type characters after the member access trigger (e.g., `nums.pu` filters to `push_back` and `pop_back`).
 
-### 4. 🎛️ Clean Glassmorphism Popup
-- Instantly toggle Autocomplete or Snippets on/off.
-- Changes update live in your active LeetCode Monaco editor tabs.
+### 4. C++ Keywords, Constants & Standard Algorithms
+- Primitive types: `int`, `long long`, `double`, `float`, `char`, `bool`, `void`, `auto`, `size_t`
+- Constants: `INT_MAX`, `INT_MIN`, `LLONG_MAX`, `LLONG_MIN`, `nullptr`, `true`, `false`
+- STL algorithms: `sort`, `reverse`, `max`, `min`, `abs`, `accumulate`, `count`, `swap`, `lower_bound`, `upper_bound`, `binary_search`, `to_string`, `stoi`, `stoll`, `make_pair`, `sqrt`, `pow`, `gcd`, `lcm`
+
+### 5. Competitive Programming Snippets
+- `fori` -> `for (int i = 0; i < n; ++i)`
+- `fore` -> `for (auto& x : container)`
+- `sortv` -> `sort(v.begin(), v.end())`
+- `all` / `rall` -> `v.begin(), v.end()` / `v.rbegin(), v.rend()`
+- `bfs` / `dfs` / `binsearch` -> Standard algorithmic templates
+- `fastio` -> `ios_base::sync_with_stdio(false); cin.tie(NULL);`
 
 ---
 
-## Installation Guide (Chrome Developer Mode)
+## Installation
 
-### Step 1: Build the Extension
-
-Ensure you have [Node.js](https://nodejs.org/) (v16+) installed.
+### 1. Build the Extension
+Ensure you have Node.js installed, then run:
 
 ```bash
-# Install dependencies
 npm install
-
-# Build the production extension package
 npm run build
 ```
 
-This compiles TypeScript files and outputs the unpacked extension bundle into the `dist/` directory.
+The compiled extension bundle will be generated in the `dist/` directory.
 
-### Step 2: Load into Google Chrome
+### 2. Load into Chrome
+1. Open Google Chrome and navigate to `chrome://extensions`.
+2. Enable **Developer mode** using the toggle in the top-right corner.
+3. Click **Load unpacked** in the top-left toolbar.
+4. Select the `dist/` folder from this repository.
 
-1. Open **Google Chrome** and navigate to `chrome://extensions/` (or click **Menu** > **Extensions** > **Manage Extensions**).
-2. Enable **Developer mode** using the toggle switch in the top-right corner.
-3. Click the **Load unpacked** button in the top-left corner.
-4. Select the **`dist`** folder located inside this project (`Leetcode Autoomplete/dist`).
-5. **LeetSense** is now installed! 🚀
-
----
-
-## Usage on LeetCode
-
-1. Open any problem page on [LeetCode](https://leetcode.com/problems/) (or LeetCode CN).
-2. Select **C++** as your programming language in the Monaco editor.
-3. Start typing:
-   - Declare variables like `vector<int> nums;` and type `nu` to see `nums` at the top of the completion widget.
-   - Type `nums.` or `s.` to see type-aware STL methods with documentation.
-   - Type `fori`, `fore`, `sortv`, or `bfs` and press <kbd>Tab</kbd> or <kbd>Enter</kbd> to expand CP snippets.
-4. Click the **LeetSense** extension icon in your Chrome toolbar to toggle features dynamically.
+### 3. Usage
+1. Open any problem on [LeetCode](https://leetcode.com/problems/).
+2. Select **C++** as the active language in the code editor.
+3. Start typing to view suggestions.
 
 ---
 
 ## Project Structure
 
 ```
-Leetcode Autoomplete/
-├── manifest.json              # Chrome Extension V3 Manifest
-├── package.json               # Dependencies and scripts
-├── tsconfig.json              # TypeScript compilation setup
-├── build.js                   # Esbuild bundling script
-├── README.md                  # Installation & documentation
+.
+├── manifest.json            # Chrome Manifest V3 configuration
+├── package.json             # Build scripts and dependencies
+├── tsconfig.json            # TypeScript compiler configuration
+├── build.js                 # Esbuild build script
 ├── src/
-│   ├── types/
-│   │   └── monaco.d.ts        # Monaco ambient ambient type definitions
-│   ├── engine/
-│   │   ├── cppParser.ts       # Scope-aware C++ AST & type parser
-│   │   ├── stlDefinitions.ts  # C++ STL container & method database
-│   │   ├── snippets.ts        # Competitive programming snippet definitions
-│   │   └── completionProvider.ts # Monaco CompletionItemProvider implementation
-│   ├── inject/
-│   │   └── main.ts            # Main world script (registers Monaco provider)
 │   ├── content/
-│   │   └── content.ts         # Isolated world script (bridges chrome storage)
+│   │   └── content.ts       # Extension content script
+│   ├── inject/
+│   │   └── main.ts          # Main-world script interacting with Monaco Editor
+│   ├── engine/
+│   │   ├── cppParser.ts     # C++ tokenizer, scope tracker & fuzzy matcher
+│   │   ├── stlDefinitions.ts# C++ STL signatures and documentation
+│   │   ├── snippets.ts      # Competitive programming snippets
+│   │   └── completionProvider.ts # Monaco CompletionItemProvider adapter
 │   └── popup/
-│       ├── popup.html         # Extension popup HTML UI
-│       ├── popup.css          # Glassmorphism dark styling
-│       └── popup.ts           # Settings toggle logic
-└── dist/                      # Production extension ready to load into Chrome
+│       ├── popup.html       # Extension settings UI
+│       ├── popup.css        # Clean developer settings styling
+│       └── popup.ts         # Settings sync logic
+└── dist/                    # Compiled extension ready for Chrome
 ```
 
 ---
 
 ## License
 
-MIT License. Built for speed, efficiency, and seamless LeetCoding.
+MIT

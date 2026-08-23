@@ -2,57 +2,65 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>LeetSense Settings</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeetCode C++ IntelliSense</title>
   <link rel="stylesheet" href="popup.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="container">
     <header class="header">
-      <div class="brand">
-        <svg class="code-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="16 18 22 12 16 6"></polyline>
-          <polyline points="8 6 2 12 8 18"></polyline>
-        </svg>
-        <span class="title">LeetSense</span>
-        <span class="version">v1.0.0</span>
+      <div class="title-row">
+        <img src="icon.png" alt="Logo" class="logo-icon">
+        <h2>C++ IntelliSense</h2>
+        <span class="version">v1.0</span>
       </div>
-      <div class="status">
-        <span class="status-dot"></span>
-        <span>Active</span>
-      </div>
+      <p class="desc">VS Code autocomplete for LeetCode Monaco editor</p>
     </header>
 
-    <div class="section-title">ENGINE PREFERENCES</div>
-
-    <div class="settings">
-      <div class="setting-item">
-        <div class="setting-text">
-          <label for="toggle-autocomplete" class="label">Autocomplete Engine</label>
-          <p class="description">Scope-aware variables & STL member completions</p>
+    <div class="card">
+      <div class="row">
+        <div class="info">
+          <label for="enableAutocomplete">Autocomplete Engine</label>
+          <span>Variables, primitives & STL methods</span>
         </div>
         <label class="toggle">
-          <input type="checkbox" id="toggle-autocomplete" checked>
+          <input type="checkbox" id="enableAutocomplete" checked>
           <span class="track"></span>
         </label>
       </div>
 
-      <div class="setting-item">
-        <div class="setting-text">
-          <label for="toggle-snippets" class="label">CP Code Snippets</label>
-          <p class="description">Shortcuts (<code>fori</code>, <code>fore</code>, <code>sortv</code>, <code>pb</code>)</p>
+      <div class="separator"></div>
+
+      <div class="row">
+        <div class="info">
+          <label for="enableSnippets">CP Snippets</label>
+          <span>fori, fore, sortv, bfs, dfs & templates</span>
         </div>
         <label class="toggle">
-          <input type="checkbox" id="toggle-snippets" checked>
+          <input type="checkbox" id="enableSnippets" checked>
+          <span class="track"></span>
+        </label>
+      </div>
+
+      <div class="separator"></div>
+
+      <div class="row">
+        <div class="info">
+          <label for="enableScopeAwareness">Scope Awareness</label>
+          <span>Filter variables outside current block</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="enableScopeAwareness" checked>
           <span class="track"></span>
         </label>
       </div>
     </div>
 
     <footer class="footer">
-      <span>Monaco Editor Integration</span>
+      <div class="status">
+        <span class="dot"></span>
+        <span>Active on LeetCode</span>
+      </div>
     </footer>
   </div>
 

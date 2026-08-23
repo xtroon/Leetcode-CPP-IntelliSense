@@ -2,133 +2,110 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 body {
-  width: 300px;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  width: 290px;
   background-color: #18181b;
   color: #f4f4f5;
-  font-size: 13px;
+  padding: 14px;
   user-select: none;
 }
 
 .container {
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
 .header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 14px;
-  background-color: #27272a;
-  border-bottom: 1px solid #3f3f46;
+  flex-direction: column;
+  gap: 3px;
 }
 
-.brand {
+.title-row {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.code-icon {
-  color: #3b82f6;
+.logo-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
 }
 
-.title {
+.title-row h2 {
+  font-size: 15px;
   font-weight: 600;
-  font-size: 14px;
   color: #ffffff;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.2px;
 }
 
 .version {
-  font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: #71717a;
-  background-color: #18181b;
+  font-weight: 500;
+  color: #a1a1aa;
+  background: #27272a;
   padding: 1px 5px;
   border-radius: 4px;
   border: 1px solid #3f3f46;
 }
 
-.status {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.desc {
   font-size: 11px;
-  color: #10b981;
-  font-weight: 500;
-}
-
-.status-dot {
-  width: 6px;
-  height: 6px;
-  background-color: #10b981;
-  border-radius: 50%;
-}
-
-.section-title {
-  font-size: 10px;
-  font-weight: 600;
   color: #a1a1aa;
-  letter-spacing: 0.05em;
-  padding: 12px 14px 6px 14px;
+  line-height: 1.4;
 }
 
-.settings {
+.card {
+  background: #27272a;
+  border: 1px solid #3f3f46;
+  border-radius: 10px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  padding: 0 14px;
 }
 
-.setting-item {
+.row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid #27272a;
+  padding: 6px 0;
 }
 
-.setting-item:last-child {
-  border-bottom: none;
-}
-
-.setting-text {
+.info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding-right: 12px;
+  gap: 1px;
 }
 
-.label {
+.info label {
+  font-size: 12px;
   font-weight: 500;
-  color: #e4e4e7;
+  color: #f4f4f5;
   cursor: pointer;
 }
 
-.description {
-  font-size: 11px;
-  color: #a1a1aa;
-  line-height: 1.3;
-}
-
-.description code {
-  font-family: 'JetBrains Mono', monospace;
-  background-color: #27272a;
-  color: #93c5fd;
-  padding: 1px 4px;
-  border-radius: 3px;
+.info span {
   font-size: 10px;
+  color: #a1a1aa;
 }
 
-/* Minimalist Toggle Switch */
+.separator {
+  height: 1px;
+  background: #3f3f46;
+  margin: 3px 0;
+}
+
+/* Native-style Toggle Switch */
 .toggle {
   position: relative;
   display: inline-block;
-  width: 36px;
+  width: 38px;
   height: 20px;
   flex-shrink: 0;
 }
@@ -146,7 +123,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #3f3f46;
+  background-color: #52525b;
   transition: 0.2s ease;
   border-radius: 20px;
 }
@@ -154,13 +131,14 @@ body {
 .track:before {
   position: absolute;
   content: "";
-  height: 14px;
-  width: 14px;
-  left: 3px;
-  bottom: 3px;
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
   background-color: #ffffff;
   transition: 0.2s ease;
   border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 input:checked + .track {
@@ -168,14 +146,27 @@ input:checked + .track {
 }
 
 input:checked + .track:before {
-  transform: translateX(16px);
+  transform: translateX(18px);
 }
 
 .footer {
-  padding: 10px 14px;
-  background-color: #18181b;
-  border-top: 1px solid #27272a;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 2px;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
-  color: #71717a;
-  text-align: center;
+  color: #a1a1aa;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  background-color: #22c55e;
+  border-radius: 50%;
 }

@@ -1,15 +1,27 @@
 {
-  "name": "leetsense",
+  "name": "leetcode-cpp-intellisense",
   "version": "1.0.0",
-  "description": "VS Code-style intelligent autocomplete and CP snippets for LeetCode Monaco editor",
+  "description": "VS Code-style Intellisense & Autocomplete for LeetCode Monaco Editor",
+  "main": "dist/content.js",
   "scripts": {
     "build": "tsc --noEmit && node build.js",
     "watch": "node build.js --watch"
   },
+  "keywords": [
+    "leetcode",
+    "monaco",
+    "autocomplete",
+    "intellisense",
+    "chrome-extension",
+    "c++",
+    "cpp"
+  ],
+  "author": "LeetSense Team",
+  "license": "MIT",
   "devDependencies": {
     "@types/chrome": "^0.0.260",
-    "@types/node": "^20.11.0",
     "esbuild": "^0.20.0",
+    "monaco-editor": "^0.45.0",
     "typescript": "^5.3.3"
   }
 }

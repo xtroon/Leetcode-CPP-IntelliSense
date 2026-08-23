@@ -1,216 +1,270 @@
-export interface Variable {
+export interface VariableSymbol {
   name: string;
-  type: string;        // full type string e.g. "vector<int>"
-  baseType: string;    // base type key e.g. "vector"
-  line: number;        // 1-indexed line where variable is declared
-  scopeLevel: number;  // scope depth when declared
+  type: string;       // raw type e.g. "vector<int>", "string", "unordered_map<int, string>"
+  baseType: string;   // normalized STL base e.g. "vector", "string", "unordered_map", "pair", "stack"
+  scopeDepth: number; // brace depth level where declared
+  offset: number;     // character index in source code where declared
 }
 
-export class CppParser {
-  /**
-   * Parse C++ code and return all variable declarations with line numbers and scope levels.
-   */
-  static parse(code: string): { variables: Variable[]; lineScopeLevels: number[] } {
-    const lines = code.split('\n');
-    const variables: Variable[] = [];
-    const lineScopeLevels: number[] = new Array(lines.length + 1).fill(0);
+export interface TriggerContext {
+  isMemberAccess: boolean;  // true if trigger is . or ->
+  targetExpr: string;       // e.g. "nums", "s", "st"
+  memberPrefix?: string;    // e.g. "p" if typed "nums.p"
+  baseType?: string;        // mapped STL type if known
+  matchedVariable?: string; // name of declared variable if fuzzy matched
+}
 
-    let currentScope = 0;
-    const seenNames = new Set<string>();
+// STL Base Normalizer
+export function extractBaseType(rawType: string): string {
+  const clean = rawType.trim()
+    .replace(/^const\s+/, '')
+    .replace(/[*&]/g, '')
+    .replace(/^std::/, '')
+    .trim();
+  const match = clean.match(/^([a-zA-Z0-9_]+)/);
+  if (!match) return clean;
+  return match[1];
+}
 
-    for (let l = 0; l < lines.length; l++) {
-      const lineNum = l + 1;
-      const line = lines[l];
+// Levenshtein Distance for typo tolerance
+export function levenshteinDistance(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
 
-      // Calculate brace depth for this line
-      const openBraces = (line.match(/\{/g) || []).length;
-      const closeBraces = (line.match(/\}/g) || []).length;
-
-      // Scope level before closing braces on this line
-      lineScopeLevels[lineNum] = currentScope;
-
-      currentScope += openBraces - closeBraces;
-      if (currentScope < 0) currentScope = 0;
-
-      // Clean line for parsing (strip comments and string literals)
-      const cleanLine = line
-        .replace(/\/\/.*/, '')
-        .replace(/"([^"\\]|\\.)*"/g, '""')
-        .replace(/'([^'\\]|\\.)*'/g, "''");
-
-      // 1. Check for function parameter lists, e.g. (int target, vector<int>& nums)
-      const paramMatches = cleanLine.matchAll(/(?:const\s+)?([a-zA-Z_][a-zA-Z0-9_<>:,\s\*&]+)\s+([a-zA-Z_][a-zA-Z0-9_]*)(?=[,\)])/g);
-      for (const match of paramMatches) {
-        const fullType = match[1].trim();
-        const varName = match[2].trim();
-        if (this.isValidIdentifier(varName) && !this.isKeyword(varName) && !seenNames.has(`${varName}_${lineScopeLevels[lineNum]}`)) {
-          const baseType = this.extractBaseType(fullType);
-          variables.push({
-            name: varName,
-            type: fullType,
-            baseType: baseType,
-            line: lineNum,
-            scopeLevel: lineScopeLevels[lineNum],
-          });
-          seenNames.add(`${varName}_${lineScopeLevels[lineNum]}`);
-        }
-      }
-
-      // 2. Check for for-loop variables: for (int i = 0; ...) or for (auto& x : nums)
-      const forLoopMatch = cleanLine.match(/for\s*\(\s*(?:const\s+)?([a-zA-Z_][a-zA-Z0-9_<>:,\s\*&]+)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:=|\:)/);
-      if (forLoopMatch) {
-        const fullType = forLoopMatch[1].trim();
-        const varName = forLoopMatch[2].trim();
-        if (this.isValidIdentifier(varName) && !this.isKeyword(varName) && !seenNames.has(`${varName}_${lineScopeLevels[lineNum] + 1}`)) {
-          variables.push({
-            name: varName,
-            type: fullType,
-            baseType: this.extractBaseType(fullType),
-            line: lineNum,
-            scopeLevel: lineScopeLevels[lineNum] + 1, // Available inside loop body
-          });
-          seenNames.add(`${varName}_${lineScopeLevels[lineNum] + 1}`);
-        }
-      }
-
-      // 3. Standard variable declarations: vector<int> nums; int n = 0; string s("hello");
-      // Pattern: Type varName [= ...]; or Type varName;
-      const declMatches = cleanLine.matchAll(/(?:^|[{};,])\s*(?:const\s+)?([a-zA-Z_][a-zA-Z0-9_<>:,\s\*&]+)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:=\s*[^;,]+|\([^)]*\))?\s*(?=[;,]|$)/g);
-      for (const match of declMatches) {
-        const fullType = match[1].trim();
-        const varName = match[2].trim();
-
-        // Skip keywords or control statements (e.g. return, if, else, throw)
-        if (this.isValidIdentifier(varName) && !this.isKeyword(varName) && !this.isKeyword(fullType)) {
-          const baseType = this.extractBaseType(fullType);
-          if (baseType && !seenNames.has(`${varName}_${lineScopeLevels[lineNum]}`)) {
-            variables.push({
-              name: varName,
-              type: fullType,
-              baseType: baseType,
-              line: lineNum,
-              scopeLevel: lineScopeLevels[lineNum],
-            });
-            seenNames.add(`${varName}_${lineScopeLevels[lineNum]}`);
-          }
-        }
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1].toLowerCase() === b[j - 1].toLowerCase()) {
+        dp[i][j] = dp[i - 1][j - 1];
+      } else {
+        dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
       }
     }
-
-    return { variables, lineScopeLevels };
   }
+  return dp[m][n];
+}
 
-  /**
-   * Get variables that are validly in scope at cursor position (currentLine).
-   */
-  static getVariablesInScope(code: string, currentLine: number): Variable[] {
-    const { variables, lineScopeLevels } = this.parse(code);
-    const currentScope = lineScopeLevels[Math.min(currentLine, lineScopeLevels.length - 1)] ?? 0;
+// Fuzzy Subsequence Matching
+export function isFuzzyMatch(pattern: string, target: string): boolean {
+  pattern = pattern.toLowerCase();
+  target = target.toLowerCase();
+  if (target.includes(pattern)) return true;
 
-    const activeVariables: Variable[] = [];
-    const seenNames = new Set<string>();
-
-    // Process variables in reverse line order (closest declaration wins)
-    for (let i = variables.length - 1; i >= 0; i--) {
-      const v = variables[i];
-      if (v.line <= currentLine && v.scopeLevel <= currentScope) {
-        if (!seenNames.has(v.name)) {
-          seenNames.add(v.name);
-          activeVariables.push(v);
-        }
-      }
+  let pIdx = 0;
+  for (let tIdx = 0; tIdx < target.length && pIdx < pattern.length; tIdx++) {
+    if (target[tIdx] === pattern[pIdx]) {
+      pIdx++;
     }
+  }
+  return pIdx === pattern.length;
+}
 
-    return activeVariables.reverse();
+/**
+ * Parses C++ source code up to the given cursor offset to extract in-scope variables.
+ */
+export function parseVariables(code: string, cursorOffset: number): VariableSymbol[] {
+  const codeBeforeCursor = code.substring(0, cursorOffset);
+  const symbols: VariableSymbol[] = [];
+  const seenNames = new Set<string>();
+
+  // Primitive / Standard C++ keywords to filter out of variable names
+  const reserved = new Set([
+    'if', 'else', 'for', 'while', 'do', 'return', 'switch', 'case', 'break', 'continue',
+    'class', 'struct', 'public', 'private', 'protected', 'virtual', 'override',
+    'void', 'int', 'double', 'float', 'bool', 'char', 'long', 'short', 'unsigned', 'signed', 'auto',
+    'const', 'static', 'constexpr', 'nullptr', 'true', 'false', 'using', 'namespace', 'template', 'typename',
+    'Solution'
+  ]);
+
+  // Helper to add symbol
+  const addSymbol = (varName: string, rawType: string, scopeDepth: number, offset: number) => {
+    varName = varName.trim();
+    rawType = rawType.trim();
+    if (!varName || !rawType || reserved.has(varName) || seenNames.has(varName)) {
+      return;
+    }
+    // Filter out invalid identifier names
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(varName)) {
+      return;
+    }
+    seenNames.add(varName);
+    symbols.push({
+      name: varName,
+      type: rawType,
+      baseType: extractBaseType(rawType),
+      scopeDepth,
+      offset
+    });
+  };
+
+  // 1. Extract function parameters
+  const funcHeaderRegex = /\(([\s\S]*?)\)\s*(?:const)?\s*\{/g;
+  let funcMatch: RegExpExecArray | null;
+  while ((funcMatch = funcHeaderRegex.exec(codeBeforeCursor)) !== null) {
+    const paramList = funcMatch[1];
+    const params = splitParameters(paramList);
+    params.forEach(param => {
+      const trimmed = param.trim();
+      if (!trimmed) return;
+      const lastSpace = trimmed.lastIndexOf(' ');
+      const lastPtr = Math.max(trimmed.lastIndexOf('*'), trimmed.lastIndexOf('&'));
+      const splitIdx = Math.max(lastSpace, lastPtr);
+      if (splitIdx !== -1) {
+        const typeStr = trimmed.substring(0, splitIdx + 1).trim();
+        const nameStr = trimmed.substring(splitIdx + 1).trim();
+        addSymbol(nameStr, typeStr, 0, funcMatch!.index);
+      }
+    });
   }
 
-  /**
-   * Infer the base type of an expression (e.g., "nums", "root->left", "mp[key]").
-   */
-  static inferType(expression: string, inScopeVars: Variable[]): string | null {
-    let expr = expression.trim();
+  // 2. Extract local variables
+  const lines = codeBeforeCursor.split('\n');
+  let runningOffset = 0;
+  let currentDepth = 0;
 
-    // Strip trailing dot or arrow if present
-    expr = expr.replace(/(\.|\->)$/, '').trim();
+  for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+    const line = lines[lineIdx];
+    const trimmed = line.trim();
 
-    // Handle index expressions: e.g. nums[i] -> infer element type of vector
-    if (expr.endsWith(']')) {
-      const baseVar = expr.substring(0, expr.indexOf('[')).trim();
-      const parentVar = inScopeVars.find(v => v.name === baseVar);
-      if (parentVar) {
-        return this.getElementType(parentVar.type);
+    // Track braces
+    for (let charIdx = 0; charIdx < line.length; charIdx++) {
+      if (line[charIdx] === '{') currentDepth++;
+      else if (line[charIdx] === '}') {
+        if (currentDepth > 0) currentDepth--;
       }
     }
 
-    // Handle pointer access: e.g. root->left or root->right
-    if (expr.includes('->')) {
-      const parts = expr.split('->').map(p => p.trim());
-      const rootVar = inScopeVars.find(v => v.name === parts[0]);
-      if (rootVar && (rootVar.baseType === 'TreeNode' || rootVar.baseType === 'ListNode')) {
-        const lastPart = parts[parts.length - 1];
-        if (lastPart === 'left' || lastPart === 'right') return 'TreeNode';
-        if (lastPart === 'next') return 'ListNode';
-        return rootVar.baseType;
+    // Skip comment lines & preprocessor directives
+    if (trimmed.startsWith('//') || trimmed.startsWith('#') || trimmed.startsWith('/*')) {
+      runningOffset += line.length + 1;
+      continue;
+    }
+
+    // Declaration regex matching
+    const declRegex = /(?:(?:const\s+)?(vector<[\s\S]+?>|unordered_map<[\s\S]+?>|map<[\s\S]+?>|unordered_set<[\s\S]+?>|set<[\s\S]+?>|stack<[\s\S]+?>|queue<[\s\S]+?>|priority_queue<[\s\S]+?>|deque<[\s\S]+?>|pair<[\s\S]+?>|string|int|long\s+long|double|float|bool|char|auto|[A-Z][a-zA-Z0-9_]*\*?))\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\s*=\s*[^;,]+|\s*\{[^}]*\}|\s*\([^)]*\))?(?:\s*,\s*([a-zA-Z_][a-zA-Z0-9_]*)(?:\s*=\s*[^;,]+)?)*\s*;/g;
+
+    let match: RegExpExecArray | null;
+    while ((match = declRegex.exec(line)) !== null) {
+      const rawType = match[1];
+      const firstVar = match[2];
+      addSymbol(firstVar, rawType, currentDepth, runningOffset + match.index);
+
+      if (match[3]) {
+        addSymbol(match[3], rawType, currentDepth, runningOffset + match.index);
       }
     }
 
-    // Direct variable lookup
-    const directVar = inScopeVars.find(v => v.name === expr);
-    if (directVar) {
-      return directVar.baseType;
+    // Range-for loop variables
+    const rangeForRegex = /for\s*\(\s*(?:const\s+)?([a-zA-Z0-9_:<>&*]+)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g;
+    let forMatch: RegExpExecArray | null;
+    while ((forMatch = rangeForRegex.exec(line)) !== null) {
+      addSymbol(forMatch[2], forMatch[1], currentDepth, runningOffset + forMatch.index);
     }
 
-    return null;
-  }
-
-  /**
-   * Extract base type identifier from a complex C++ type string.
-   * e.g. "std::vector<int>&" -> "vector"
-   * "const string" -> "string"
-   * "TreeNode*" -> "TreeNode"
-   */
-  public static extractBaseType(typeStr: string): string {
-    let clean = typeStr
-      .replace(/\bconst\b/g, '')
-      .replace(/[&*]/g, '')
-      .replace(/\bstd::/g, '')
-      .trim();
-
-    // If template, extract container name before '<'
-    const angleIndex = clean.indexOf('<');
-    if (angleIndex !== -1) {
-      clean = clean.substring(0, angleIndex).trim();
+    // Traditional for loop variables
+    const tradForRegex = /for\s*\(\s*([a-zA-Z0-9_]+)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=/g;
+    let tradMatch: RegExpExecArray | null;
+    while ((tradMatch = tradForRegex.exec(line)) !== null) {
+      addSymbol(tradMatch[2], tradMatch[1], currentDepth, runningOffset + tradMatch.index);
     }
 
-    return clean;
+    runningOffset += line.length + 1;
   }
 
-  /**
-   * Infer container element type.
-   * e.g. "vector<string>" -> "string", "vector<int>" -> "int"
-   */
-  private static getElementType(typeStr: string): string {
-    const match = typeStr.match(/<([^>]+)>/);
-    if (match) {
-      const inner = match[1].trim();
-      return this.extractBaseType(inner);
+  return symbols;
+}
+
+// Splits parameter list considering nested <> brackets
+function splitParameters(paramStr: string): string[] {
+  const result: string[] = [];
+  let depth = 0;
+  let current = '';
+
+  for (let i = 0; i < paramStr.length; i++) {
+    const c = paramStr[i];
+    if (c === '<' || c === '(') depth++;
+    else if (c === '>' || c === ')') depth--;
+    else if (c === ',' && depth === 0) {
+      result.push(current);
+      current = '';
+      continue;
     }
-    return 'unknown';
+    current += c;
+  }
+  if (current.trim()) {
+    result.push(current);
+  }
+  return result;
+}
+
+/**
+ * Finds the best matching declared variable (exact or typo/spelling match).
+ */
+function findMatchingVariable(expr: string, variables: VariableSymbol[]): VariableSymbol | undefined {
+  if (variables.length === 0) return undefined;
+
+  // 1. Exact match
+  const exact = variables.find(v => v.name === expr);
+  if (exact) return exact;
+
+  // 2. Case-insensitive match
+  const caseInsensitive = variables.find(v => v.name.toLowerCase() === expr.toLowerCase());
+  if (caseInsensitive) return caseInsensitive;
+
+  // 3. Typo / Spelling distance match (Levenshtein distance <= 2)
+  let bestMatch: VariableSymbol | undefined = undefined;
+  let minDistance = 3;
+
+  for (const v of variables) {
+    const dist = levenshteinDistance(expr, v.name);
+    if (dist <= 2 && dist < minDistance) {
+      minDistance = dist;
+      bestMatch = v;
+    }
   }
 
-  private static isValidIdentifier(str: string): boolean {
-    return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(str);
+  // 4. Subsequence match (e.g. vnums -> nums or vec -> vector)
+  if (!bestMatch) {
+    bestMatch = variables.find(v => isFuzzyMatch(v.name, expr) || isFuzzyMatch(expr, v.name));
   }
 
-  private static isKeyword(str: string): boolean {
-    const keywords = new Set([
-      'int', 'long', 'double', 'float', 'char', 'bool', 'void', 'auto',
-      'const', 'static', 'unsigned', 'signed', 'struct', 'class', 'enum',
-      'if', 'else', 'for', 'while', 'do', 'return', 'break', 'continue',
-      'switch', 'case', 'default', 'public', 'private', 'protected',
-      'try', 'catch', 'throw', 'new', 'delete', 'true', 'false', 'nullptr',
-      'sizeof', 'typedef', 'using', 'namespace', 'template', 'typename'
-    ]);
-    return keywords.has(str);
+  return bestMatch;
+}
+
+/**
+ * Checks line prefix up to cursor to see if user typed `.` or `->` after an expression.
+ */
+export function getTriggerContext(lineUntilCursor: string, variables: VariableSymbol[]): TriggerContext {
+  const dotMatch = lineUntilCursor.match(/([a-zA-Z_][a-zA-Z0-9_]*)\.([a-zA-Z_][a-zA-Z0-9_]*)?$/);
+  if (dotMatch) {
+    const expr = dotMatch[1];
+    const memberPrefix = dotMatch[2] || '';
+    const matchedVar = findMatchingVariable(expr, variables);
+
+    return {
+      isMemberAccess: true,
+      targetExpr: expr,
+      memberPrefix,
+      baseType: matchedVar ? matchedVar.baseType : undefined,
+      matchedVariable: matchedVar ? matchedVar.name : undefined
+    };
   }
+
+  const arrowMatch = lineUntilCursor.match(/([a-zA-Z_][a-zA-Z0-9_]*)->([a-zA-Z_][a-zA-Z0-9_]*)?$/);
+  if (arrowMatch) {
+    const expr = arrowMatch[1];
+    const memberPrefix = arrowMatch[2] || '';
+    const matchedVar = findMatchingVariable(expr, variables);
+
+    return {
+      isMemberAccess: true,
+      targetExpr: expr,
+      memberPrefix,
+      baseType: matchedVar ? matchedVar.baseType : undefined,
+      matchedVariable: matchedVar ? matchedVar.name : undefined
+    };
+  }
+
+  return { isMemberAccess: false, targetExpr: '' };
 }

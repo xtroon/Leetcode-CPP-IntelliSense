@@ -7,8 +7,8 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
-    "lib": ["DOM", "DOM.Iterable", "ES2022"]
+    "lib": ["ES2022", "DOM"],
+    "noEmit": true
   },
   "include": ["src/**/*"]
 }
