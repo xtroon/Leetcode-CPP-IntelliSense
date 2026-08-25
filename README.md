@@ -96,6 +96,12 @@ The compiled extension bundle will be generated in the `dist/` directory.
 
 ---
 
+## Contributing
+
+Contributions are welcome! If you face any issues, bugs, or have suggestions, please feel free to contribute by raising an issue on GitHub.
+
+---
+
 ## License
 
 MIT
