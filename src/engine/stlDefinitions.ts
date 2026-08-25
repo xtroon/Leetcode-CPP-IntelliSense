@@ -213,5 +213,14 @@ export const CPP_KEYWORDS: CppKeywordItem[] = [
   { label: 'sqrt', detail: 'std::sqrt(x)', doc: 'Computes square root of x.', insertText: 'sqrt(${1:x})', kind: 'function' },
   { label: 'pow', detail: 'std::pow(base, exp)', doc: 'Computes base raised to the power exp.', insertText: 'pow(${1:base}, ${2:exp})', kind: 'function' },
   { label: 'gcd', detail: 'std::gcd(a, b)', doc: 'Computes greatest common divisor.', insertText: 'gcd(${1:a}, ${2:b})', kind: 'function' },
-  { label: 'lcm', detail: 'std::lcm(a, b)', doc: 'Computes least common multiple.', insertText: 'lcm(${1:a}, ${2:b})', kind: 'function' }
+  { label: 'lcm', detail: 'std::lcm(a, b)', doc: 'Computes least common multiple.', insertText: 'lcm(${1:a}, ${2:b})', kind: 'function' },
+
+  // Control Flow Keywords
+  { label: 'return', detail: 'keyword', doc: 'return statement', insertText: 'return', kind: 'keyword' },
+  { label: 'if', detail: 'keyword', doc: 'if statement', insertText: 'if', kind: 'keyword' },
+  { label: 'else', detail: 'keyword', doc: 'else statement', insertText: 'else', kind: 'keyword' },
+  { label: 'for', detail: 'keyword', doc: 'for loop', insertText: 'for', kind: 'keyword' },
+  { label: 'while', detail: 'keyword', doc: 'while loop', insertText: 'while', kind: 'keyword' },
+  { label: 'break', detail: 'keyword', doc: 'break statement', insertText: 'break;', kind: 'keyword' },
+  { label: 'continue', detail: 'keyword', doc: 'continue statement', insertText: 'continue;', kind: 'keyword' }
 ];

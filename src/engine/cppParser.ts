@@ -142,7 +142,7 @@ export function parseVariables(code: string, cursorOffset: number): VariableSymb
     }
 
     // Declaration regex matching
-    const declRegex = /(?:(?:const\s+)?(vector<[\s\S]+?>|unordered_map<[\s\S]+?>|map<[\s\S]+?>|unordered_set<[\s\S]+?>|set<[\s\S]+?>|stack<[\s\S]+?>|queue<[\s\S]+?>|priority_queue<[\s\S]+?>|deque<[\s\S]+?>|pair<[\s\S]+?>|string|int|long\s+long|double|float|bool|char|auto|[A-Z][a-zA-Z0-9_]*\*?))\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\s*=\s*[^;,]+|\s*\{[^}]*\}|\s*\([^)]*\))?(?:\s*,\s*([a-zA-Z_][a-zA-Z0-9_]*)(?:\s*=\s*[^;,]+)?)*\s*;/g;
+    const declRegex = /(?:(?:const\s+)?(?:std::)?((?:vector|unordered_map|map|unordered_set|set|stack|queue|priority_queue|deque|pair|string|int|long\s+long|double|float|bool|char|auto|[A-Z][a-zA-Z0-9_]*\*?)(?:<[^;{}]*?>)?))\s+([a-zA-Z_][a-zA-Z0-9_]*)[^;,]*(?:\s*,\s*([a-zA-Z_][a-zA-Z0-9_]*)[^;,]*)*\s*;/g;
 
     let match: RegExpExecArray | null;
     while ((match = declRegex.exec(line)) !== null) {
@@ -242,11 +242,25 @@ export function getTriggerContext(lineUntilCursor: string, variables: VariableSy
     const memberPrefix = dotMatch[2] || '';
     const matchedVar = findMatchingVariable(expr, variables);
 
+    let baseType = matchedVar ? matchedVar.baseType : undefined;
+    if (!baseType) {
+      const lowerExpr = expr.toLowerCase();
+      if (lowerExpr.includes('hash') || lowerExpr.includes('set') || lowerExpr === 'st' || lowerExpr === 'seen' || lowerExpr === 'visited') {
+        baseType = 'unordered_set';
+      } else if (lowerExpr.includes('map') || lowerExpr === 'mp' || lowerExpr === 'dict') {
+        baseType = 'unordered_map';
+      } else if (lowerExpr === 'v' || lowerExpr === 'vec' || lowerExpr.includes('vector') || lowerExpr === 'nums' || lowerExpr === 'arr') {
+        baseType = 'vector';
+      } else if (lowerExpr === 's' || lowerExpr === 'str' || lowerExpr.includes('string')) {
+        baseType = 'string';
+      }
+    }
+
     return {
       isMemberAccess: true,
       targetExpr: expr,
       memberPrefix,
-      baseType: matchedVar ? matchedVar.baseType : undefined,
+      baseType,
       matchedVariable: matchedVar ? matchedVar.name : undefined
     };
   }
@@ -257,11 +271,19 @@ export function getTriggerContext(lineUntilCursor: string, variables: VariableSy
     const memberPrefix = arrowMatch[2] || '';
     const matchedVar = findMatchingVariable(expr, variables);
 
+    let baseType = matchedVar ? matchedVar.baseType : undefined;
+    if (!baseType) {
+      const lowerExpr = expr.toLowerCase();
+      if (lowerExpr === 'head' || lowerExpr === 'curr' || lowerExpr === 'tail' || lowerExpr === 'dummy' || lowerExpr === 'prev' || lowerExpr === 'next' || lowerExpr.includes('node')) {
+        baseType = 'ListNode';
+      }
+    }
+
     return {
       isMemberAccess: true,
       targetExpr: expr,
       memberPrefix,
-      baseType: matchedVar ? matchedVar.baseType : undefined,
+      baseType,
       matchedVariable: matchedVar ? matchedVar.name : undefined
     };
   }

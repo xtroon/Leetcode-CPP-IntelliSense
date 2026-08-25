@@ -9,14 +9,12 @@ document.addEventListener('DOMContentLoaded', () => {
     enableScopeAwareness: true
   };
 
-  // Load saved state
   chrome.storage.sync.get(defaults, (items) => {
     enableAutocomplete.checked = items.enableAutocomplete;
     enableSnippets.checked = items.enableSnippets;
     enableScopeAwareness.checked = items.enableScopeAwareness;
   });
 
-  // Attach change listeners
   const saveOptions = () => {
     chrome.storage.sync.set({
       enableAutocomplete: enableAutocomplete.checked,
